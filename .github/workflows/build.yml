@@ -25,28 +25,42 @@ jobs:
           name: CCSE-TestGen-Windows
           path: dist/CCSE-TestGen.exe
 
+  
   build-linux:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
+
       - name: Install Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
+
       - name: Install requirements
         run: pip install -r requirements.txt pyinstaller
-      - name: Build AppImage
+
+      - name: Build binary
         run: |
           pyinstaller src/main.py --name CCSE-TestGen --onefile
           chmod +x dist/CCSE-TestGen
+
+      - name: Download appimagetool and extract (no FUSE)
+        run: |
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool.AppImage
+          chmod +x appimagetool.AppImage
+          ./appimagetool.AppImage --appimage-extract
+          # La herramienta real queda en squashfs-root/AppRun
+
+      - name: Pack AppImage
+        run: |
           mkdir -p AppDir/usr/bin
           cp dist/CCSE-TestGen AppDir/usr/bin/
-          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
-          chmod +x appimagetool
-          ./appimagetool AppDir CCSE-TestGen-x86_64.AppImage
+          ./squashfs-root/AppRun AppDir CCSE-TestGen-x86_64.AppImage
+
       - name: Upload AppImage
         uses: actions/upload-artifact@v4
         with:
           name: CCSE-TestGen-Linux
           path: CCSE-TestGen-x86_64.AppImage
+
 
