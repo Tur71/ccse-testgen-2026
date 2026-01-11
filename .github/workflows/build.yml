@@ -1,0 +1,51 @@
+
+name: Build CCSE-TestGen
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install requirements
+        run: pip install -r CCSE-TestGen/requirements.txt pyinstaller
+      - name: Build EXE
+        run: pyinstaller CCSE-TestGen/src/main.py --name CCSE-TestGen --onefile
+      - name: Upload EXE
+        uses: actions/upload-artifact@v4
+        with:
+          name: CCSE-TestGen-Windows
+          path: dist/CCSE-TestGen.exe
+
+  build-linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install requirements
+        run: pip install -r CCSE-TestGen/requirements.txt pyinstaller
+      - name: Build AppImage
+        run: |
+          pyinstaller CCSE-TestGen/src/main.py --name CCSE-TestGen --onefile
+          chmod +x dist/CCSE-TestGen
+          mkdir -p AppDir/usr/bin
+          cp dist/CCSE-TestGen AppDir/usr/bin/
+          wget -q https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage -O appimagetool
+          chmod +x appimagetool
+          ./appimagetool AppDir CCSE-TestGen-x86_64.AppImage
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: CCSE-TestGen-Linux
+          path: CCSE-TestGen-x86_64.AppImage
